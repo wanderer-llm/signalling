@@ -64,14 +64,61 @@ class Station:
     platform_count: int = 1
     platform_length_meters: float = 200.0
     coordinates: tuple = (0.0, 0.0)
-    
+
     def __hash__(self):
         return hash(self.name)
-    
+
     def __eq__(self, other):
         if not isinstance(other, Station):
             return False
         return self.name == other.name
+
+    def __post_init__(self):
+        # Initialize platform assignments
+        self.platforms: Dict[int, Optional[str]] = {i: None for i in range(1, self.platform_count + 1)}
+        self.occupied_platforms: Set[int] = set()
+
+    def can_arrive(self) -> bool:
+        """Check if the station can accept a new train."""
+        return len(self.occupied_platforms) < self.platform_count
+
+    def arrive(self, train_name: str, platform: Optional[int] = None) -> bool:
+        """Have a train arrive at the station and stop."""
+        if not self.can_arrive():
+            return False
+
+        # If no platform specified, find an available one
+        if platform is None:
+            for p in range(1, self.platform_count + 1):
+                if p not in self.occupied_platforms:
+                    platform = p
+                    break
+            else:
+                return False
+
+        if platform not in self.platforms or platform in self.occupied_platforms:
+            return False
+
+        self.platforms[platform] = train_name
+        self.occupied_platforms.add(platform)
+        return True
+
+    def depart(self, train_name: str) -> bool:
+        """Have a train depart from the station."""
+        for platform in list(self.occupied_platforms):
+            if self.platforms[platform] == train_name:
+                self.platforms[platform] = None
+                self.occupied_platforms.remove(platform)
+                return True
+        return False
+
+    def get_train_on_platform(self, platform: int) -> Optional[str]:
+        """Get the train name on a specific platform."""
+        return self.platforms.get(platform)
+
+    def __repr__(self):
+        occupied = ", ".join(str(p) for p in self.occupied_platforms) or "none"
+        return f"Station({self.name}, platforms={self.platform_count}, occupied={[p for p in self.occupied_platforms]})"
 
 
 class RailwayNetwork:

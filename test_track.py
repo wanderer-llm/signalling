@@ -144,5 +144,127 @@ def test_junction_equality():
     assert j1 == j2
 
 
+def test_station_arrive():
+    """Test train arriving at a station."""
+    network = RailwayNetwork()
+    station = network.add_station("central", platform_count=2)
+
+    # Station can accept a train
+    assert station.can_arrive() is True
+
+    # Train arrives on platform 1
+    result = station.arrive("train1", platform=1)
+    assert result is True
+    assert station.platforms[1] == "train1"
+    assert 1 in station.occupied_platforms
+
+    # Station still has capacity
+    assert station.can_arrive() is True
+
+    # Another train arrives on platform 2
+    result = station.arrive("train2", platform=2)
+    assert result is True
+    assert station.platforms[2] == "train2"
+    assert len(station.occupied_platforms) == 2
+
+
+def test_station_arrive_full():
+    """Test train arriving at a full station."""
+    network = RailwayNetwork()
+    station = network.add_station("central", platform_count=1)
+
+    # First train arrives
+    station.arrive("train1", platform=1)
+
+    # Station is now full
+    assert station.can_arrive() is False
+
+    # Second train cannot arrive
+    result = station.arrive("train2", platform=1)
+    assert result is False
+    assert station.platforms[1] == "train1"
+
+
+def test_station_depart():
+    """Test train departing from a station."""
+    network = RailwayNetwork()
+    station = network.add_station("central", platform_count=2)
+
+    # Train arrives
+    station.arrive("train1", platform=1)
+    station.arrive("train2", platform=2)
+
+    # Train1 departs
+    result = station.depart("train1")
+    assert result is True
+    assert station.platforms[1] is None
+    assert 1 not in station.occupied_platforms
+
+    # Station has capacity again
+    assert station.can_arrive() is True
+
+
+def test_station_depart_not_found():
+    """Test departing a train that's not at the station."""
+    network = RailwayNetwork()
+    station = network.add_station("central", platform_count=1)
+
+    # Train arrives
+    station.arrive("train1", platform=1)
+
+    # Try to depart a different train
+    result = station.depart("train2")
+    assert result is False
+    assert station.platforms[1] == "train1"
+
+
+def test_station_get_train_on_platform():
+    """Test getting train name from platform."""
+    network = RailwayNetwork()
+    station = network.add_station("central", platform_count=2)
+
+    assert station.get_train_on_platform(1) is None
+
+    station.arrive("train1", platform=1)
+    assert station.get_train_on_platform(1) == "train1"
+    assert station.get_train_on_platform(2) is None
+
+
+def test_station_repr():
+    """Test station string representation."""
+    network = RailwayNetwork()
+    station = network.add_station("central", platform_count=2)
+
+    repr_str = repr(station)
+    assert "central" in repr_str
+    assert "platforms=2" in repr_str
+
+
+def test_station_auto_assign_platform():
+    """Test automatic platform assignment."""
+    network = RailwayNetwork()
+    station = network.add_station("central", platform_count=3)
+
+    # First train should get platform 1
+    station.arrive("train1")
+    assert station.platforms[1] == "train1"
+    assert 1 in station.occupied_platforms
+
+    # Second train should get platform 2
+    station.arrive("train2")
+    assert station.platforms[2] == "train2"
+    assert 2 in station.occupied_platforms
+
+
+def test_station_platform_out_of_range():
+    """Test arriving at a non-existent platform."""
+    network = RailwayNetwork()
+    station = network.add_station("central", platform_count=1)
+
+    # Arriving at platform 2 (doesn't exist) should fail
+    result = station.arrive("train1", platform=2)
+    assert result is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
