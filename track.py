@@ -136,7 +136,13 @@ class RailwayNetwork:
         if name in self.junctions:
             return self.junctions[name]
         
-        junction = Junction(name=name, junction_type=junction_type)
+        # Assign coordinates based on junction name (simple grid layout)
+        # Use the length of the name to determine position
+        name_hash = hash(name) % 100
+        x = name_hash % 10
+        y = (name_hash // 10) % 10
+        
+        junction = Junction(name=name, junction_type=junction_type, coordinates=(float(x), float(y)))
         self.junctions[name] = junction
         self._junction_ids.add(name)
         return junction
@@ -146,9 +152,14 @@ class RailwayNetwork:
         """Add a station to the network."""
         if name in self.stations or name in self._station_names:
             return self.stations[name]
+        # Assign coordinates based on station name (continue from junctions)
+        name_hash = hash(name) % 100
+        x = 10 + (name_hash % 10)
+        y = 10 + ((name_hash // 10) % 10)
         
         station = Station(name=name, platform_count=platform_count,
-                         platform_length_meters=platform_length)
+                         platform_length_meters=platform_length,
+                         coordinates=(float(x), float(y)))
         self.stations[name] = station
         self._station_names.add(name)
         return station

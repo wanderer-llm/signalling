@@ -100,11 +100,13 @@ class Train:
         if self.location == self.target:
             self.moving = False
             self.path = []
+            self.on_track = None  # Train has arrived at station
+        else:
+            # Train is still moving, free the track it just left
+            self.signal_logic.free_track(found_track.name)
         
         # Move to next path segment
         self._current_path_index += 1
-        
-        return True
     
     def __repr__(self):
         status = "idle"
